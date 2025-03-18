@@ -1,2 +1,2 @@
 # landing.github.io
-landing.github.io
+https://landing.github.io/

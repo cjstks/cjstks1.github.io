@@ -100,18 +100,52 @@
     const chatBox = document.getElementById('chatBox');
     const emotionIcon = document.getElementById('emotionIcon');
 
-    // 음성 인식 기능 (STT)
+    // 음성 인식 기능 (STT) - 모바일 호환성 개선
     micButton.addEventListener('click', () => {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'ko-KR';
-        recognition.start();
+        try {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || false;
 
-        recognition.onresult = (event) => {
-            const text = event.results[0][0].transcript;
-            updateChat(`사용자: ${text}`);
-            processInput(text);
-        };
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'ko-KR';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                // 음성 인식 시작 전 상태 표시
+                micButton.innerHTML = '<i class="ph ph-microphone"></i><span>듣는 중...</span>';
+                micButton.classList.add('bg-red-600');
+
+                recognition.start();
+
+                recognition.onresult = (event) => {
+                    const text = event.results[0][0].transcript;
+                    updateChat(`사용자: ${text}`);
+                    processInput(text);
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('음성 인식 오류:', event.error);
+                    updateChat(`시스템: 음성 인식에 문제가 발생했습니다. 텍스트로 입력해 주세요.`);
+                    resetMicButton();
+                };
+
+                recognition.onend = () => {
+                    resetMicButton();
+                };
+            } else {
+                updateChat(`시스템: 이 브라우저는 음성 인식을 지원하지 않습니다. 텍스트로 입력해 주세요.`);
+            }
+        } catch (error) {
+            console.error('음성 인식 기능 초기화 오류:', error);
+            updateChat(`시스템: 음성 인식을 사용할 수 없습니다. 텍스트로 입력해 주세요.`);
+        }
     });
+
+    // 마이크 버튼 상태 초기화
+    function resetMicButton() {
+        micButton.innerHTML = '<i class="ph ph-microphone"></i><span>말하기</span>';
+        micButton.classList.remove('bg-red-600');
+    }
 
     // 텍스트 입력 기능
     sendButton.addEventListener('click', () => {
@@ -123,19 +157,52 @@
         }
     });
 
+    // Enter 키 입력 시 메시지 전송
+    textInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            sendButton.click();
+        }
+    });
+
     // 채팅 영역 업데이트 함수
     function updateChat(message) {
         chatBox.innerHTML += `<p class="text-gray-800 font-semibold mt-2">${message}</p>`;
         chatBox.scrollTop = chatBox.scrollHeight; // 스크롤을 맨 아래로 이동
     }
 
-    // TTS (텍스트를 음성으로 변환하여 말하기)
+    // TTS (텍스트를 음성으로 변환하여 말하기) - 모바일 호환성 개선
     function speakText(text) {
-        const speech = new SpeechSynthesisUtterance(text);
-        speech.lang = 'ko-KR';  // 한국어 설정
-        speech.rate = 1.0;  // 말하는 속도 (1.0 = 기본)
-        speech.pitch = 1.0; // 음성 톤
-        window.speechSynthesis.speak(speech);
+        // 모바일 브라우저에서 TTS가 작동하도록 보장
+        if ('speechSynthesis' in window) {
+            // 진행 중인 음성 합성이 있다면 중지
+            window.speechSynthesis.cancel();
+
+            const speech = new SpeechSynthesisUtterance(text);
+            speech.lang = 'ko-KR';  // 한국어 설정
+            speech.rate = 1.0;  // 말하는 속도 (1.0 = 기본)
+            speech.pitch = 1.0; // 음성 톤
+            speech.volume = 1.0; // 음량 최대
+
+            // iOS Safari에서 발생할 수 있는 문제를 해결하기 위한 추가 코드
+            setTimeout(() => {
+                window.speechSynthesis.speak(speech);
+            }, 100);
+
+            // iOS에서 음성이 중간에 끊기는 문제 해결
+            speech.onstart = () => {
+                const intervalId = setInterval(() => {
+                    if (!window.speechSynthesis.speaking) {
+                        clearInterval(intervalId);
+                    } else {
+                        window.speechSynthesis.pause();
+                        window.speechSynthesis.resume();
+                    }
+                }, 10000); // 10초마다 pause/resume 호출
+            };
+        } else {
+            console.error('이 브라우저는 TTS를 지원하지 않습니다.');
+            updateChat(`시스템: 음성 출력을 지원하지 않는 브라우저입니다.`);
+        }
     }
 
     // 감정 분석 및 응답 결정
@@ -192,10 +259,8 @@
         updateChat(`AI: ${aiResponse}`);
         emotionIcon.innerHTML = icon;
 
-        // TTS로 AI의 답변을 음성 출력
-        const utterance = new SpeechSynthesisUtterance(aiResponse);
-        utterance.lang = 'ko-KR';
-        speechSynthesis.speak(utterance);
+        // 개선된 TTS 함수 호출
+        speakText(aiResponse);
     }
 
     // 모바일 내비게이션 토글

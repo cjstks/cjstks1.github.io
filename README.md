@@ -1,2 +1,2 @@
 # landing.github.io
-[https://landing.github.io/](https://landing.github.io/)
+(https://cjstks.github.io/cjstks1.github.io/)

@@ -192,8 +192,10 @@
         updateChat(`AI: ${aiResponse}`);
         emotionIcon.innerHTML = icon;
 
-        // **TTS를 사용하여 AI 응답을 음성으로 출력**
-        speakText(aiResponse);
+        // TTS로 AI의 답변을 음성 출력
+        const utterance = new SpeechSynthesisUtterance(aiResponse);
+        utterance.lang = 'ko-KR';
+        speechSynthesis.speak(utterance);
     }
 
     // 모바일 내비게이션 토글

@@ -106,20 +106,20 @@
 
     // 채팅 영역 업데이트 함수
     function updateChat(message) {
-        chatBox.innerHTML += `<p class='text-gray-800 font-semibold mt-2'>${message}</p>`;
+        chatBox.innerHTML += `<p class="text-gray-800 font-semibold mt-2">${message}</p>`;
         chatBox.scrollTop = chatBox.scrollHeight; // 스크롤을 맨 아래로 이동
     }
 
-    // 문장 내 감정을 분석하여 아이콘 반환
+    // 기본 감정 분석 함수 업데이트 (여기에 추가적인 세세한 감정 단서 설정 가능)
     function analyzeEmotion(text) {
         let icon = '';
-        if (text.includes('슬퍼') || text.includes('힘들어') || text.includes('우울')) {
+        if (/슬프|힘들|우울/.test(text)) {
             icon = '😢';
-        } else if (text.includes('웃겨') || text.includes('행복') || text.includes('기뻐')) {
+        } else if (/웃|행복|기뻐/.test(text)) {
             icon = '😄';
-        } else if (text.includes('화나') || text.includes('짜증나')) {
+        } else if (/화나|짜증나/.test(text)) {
             icon = '😡';
-        } else if (text.includes('놀라') || text.includes('충격')) {
+        } else if (/놀라|충격/.test(text)) {
             icon = '😲';
         } else {
             icon = '😐';
@@ -127,7 +127,12 @@
         return icon;
     }
 
-    // 입력된 텍스트를 분석하여 아이콘과 AI의 답변을 결정하고, TTS로 읽어주기
+    // 응답에 다양성을 주기 위한 랜덤 응답 함수
+    function randomResponse(options) {
+        return options[Math.floor(Math.random() * options.length)];
+    }
+
+    // 입력된 텍스트를 분석하여 아이콘과 AI의 답변을 결정하고, TTS로 읽어주기 (세세하게 대화하기 위한 개선)
     function processInput(text) {
         const userText = text.toLowerCase();
         let aiResponse = '';
@@ -137,38 +142,81 @@
         if (userText.includes('추천')) {
             if (userText.includes('영화')) {
                 icon = '🎬';
-                aiResponse = '요즘 인기 있는 영화로는 "기생충"과 "미나리"가 있어요. 추천해 드릴게요!';
+                aiResponse = randomResponse([
+                    '최근 화제가 된 영화로는 "기생충"과 "미나리"가 있어요. 꼭 한번 보세요!',
+                    '"인셉션" 같은 창의적인 영화도 추천드려요!',
+                    '요즘 인기 있는 영화 중에는 "이터널스"도 있어요. 어떠신가요?'
+                ]);
             } else if (userText.includes('책')) {
                 icon = '📚';
-                aiResponse = '최근 추천할 만한 책은 "데미안"과 "어린 왕자"예요!';
+                aiResponse = randomResponse([
+                    '"데미안", "어린 왕자", "해리포터" 등 다양한 장르의 책을 추천드려요!',
+                    '최근 베스트셀러 중 하나인 "미움받을 용기"도 좋은 선택이에요.',
+                    '"노인과 바다"와 같은 고전 문학도 추천해요!'
+                ]);
             } else if (userText.includes('음식')) {
                 icon = '🍲';
-                aiResponse = '맛있는 음식을 추천드리자면, 김치찌개나 떡볶이가 좋을 것 같아요!';
+                aiResponse = randomResponse([
+                    '맛있는 음식으로는 김치찌개, 떡볶이, 비빔밥 등이 있어요!',
+                    '한번쯤은 파스타나 피자도 도전해 보세요!',
+                    '오늘은 한식 뿐만 아니라 양식이나 일식도 추천드려요.'
+                ]);
             } else {
                 icon = '⭐';
-                aiResponse = '어떤 종류의 추천을 원하시나요? 영화, 책, 음식 중 하나를 말씀해 주세요!';
+                aiResponse = '어떤 분야에서 추천을 원하시는지 영화, 책, 음식 등 구체적으로 말씀해 주세요!';
             }
         }
-        // 인사 관련: "안녕" 이라는 단어가 포함된 경우
-        else if (userText.includes('안녕')) {
+        // 인사 관련: "안녕" 및 "안녕하세요"라는 단어가 포함된 경우
+        else if (/안녕/.test(userText)) {
             icon = '😄';
-            aiResponse = '안녕하세요! 오늘 기분은 어떠세요?';
+            aiResponse = randomResponse([
+                '안녕하세요! 좋은 하루 보내고 계신가요?',
+                '반갑습니다! 무엇을 도와드릴까요?',
+                '안녕하세요! 언제든 대화하고 싶으면 말씀해 주세요.'
+            ]);
         }
         // 날씨 관련
         else if (userText.includes('날씨')) {
             icon = '☀️';
-            aiResponse = '오늘은 맑고 화창해요! 외출하기 좋은 날이에요.';
+            aiResponse = randomResponse([
+                '오늘은 맑고 화창한 날씨에요. 외출하시기 좋은 날씨네요!',
+                '현재 날씨는 맑지만, 오후부터 약간 흐릴 수도 있어요.',
+                '날씨가 정말 좋아요! 산책이나 야외활동 추천드려요.'
+            ]);
         }
-        // 기타 감정 분석 후 기본 답변
+        // 감정 표현 분석: 기쁨, 슬픔 등 감정 관련 문구에 따른 반응
+        else if (/기뻐|행복/.test(userText)) {
+            icon = '😄';
+            aiResponse = randomResponse([
+                '기쁜 마음이 전해져 오네요! 오늘은 좋은 일이 생길 것 같아요.',
+                '행복한 기분을 유지하세요! 긍정적인 에너지가 넘치네요.'
+            ]);
+        }
+        else if (/슬프|힘들|우울/.test(userText)) {
+            icon = '😢';
+            aiResponse = randomResponse([
+                '힘든 순간이 있군요. 조금 더 이야기해 주실 수 있을까요?',
+                '마음이 무겁네요. 필요하다면 언제든 이야기해 주세요.'
+            ]);
+        }
+        // 추가적인 질문이나 사소한 대화 (예: 취미, 관심사 등)
+        else if (userText.includes('취미') || userText.includes('재미')) {
+            icon = '🎲';
+            aiResponse = randomResponse([
+                '저는 대화를 통해 새로운 정보를 배우는 것을 즐겨요! 당신의 취미는 무엇인가요?',
+                '취미 얘기라면 음악, 영화, 독서 등 다양한 것들이 있죠. 어떤 분야에 관심이 있으세요?'
+            ]);
+        }
+        // 그 외의 일반적인 문의에 대한 응답
         else {
             icon = analyzeEmotion(userText);
-            aiResponse = '죄송하지만 무슨 말씀인지 잘 이해하지 못했어요. 다시 한 번 말씀해 주세요!';
+            aiResponse = '조금 더 구체적으로 말씀해 주시면 더 좋은 답변을 드릴 수 있을 것 같아요!';
         }
 
         updateChat(`AI: ${aiResponse}`);
         emotionIcon.innerHTML = icon;
 
-        // TTS로 AI의 답변을 음성 출력
+        // TTS (텍스트 음성 변환)로 AI의 답변을 음성 출력
         const utterance = new SpeechSynthesisUtterance(aiResponse);
         utterance.lang = 'ko-KR';
         speechSynthesis.speak(utterance);
